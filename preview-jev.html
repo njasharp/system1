@@ -1,0 +1,968 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>JEV Playground · Decision Layer GUI</title>
+<style>
+  :root{
+    --bg:#0b0d12;
+    --bg-1:#11141c;
+    --bg-2:#161a24;
+    --bg-3:#1d2230;
+    --line:#232a3a;
+    --line-2:#2c3447;
+    --ink:#e7ebf3;
+    --ink-dim:#aab1c2;
+    --ink-mute:#6f778c;
+    --accent:#7c5cff;
+    --accent-2:#26d4ff;
+    --good:#3ddc97;
+    --warn:#ffb547;
+    --bad:#ff6b6b;
+    --code:#0d1018;
+    --shadow: 0 10px 30px rgba(0,0,0,.45);
+    --radius: 12px;
+    --radius-sm: 8px;
+    --mono: ui-monospace, SFMono-Regular, "JetBrains Mono", Menlo, Consolas, monospace;
+    --sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Inter, sans-serif;
+  }
+  *{box-sizing:border-box}
+  html,body{height:100%}
+  body{
+    margin:0;
+    background:
+      radial-gradient(1200px 600px at 10% -10%, rgba(124,92,255,.18), transparent 60%),
+      radial-gradient(900px 500px at 100% 0%, rgba(38,212,255,.12), transparent 60%),
+      var(--bg);
+    color:var(--ink);
+    font-family:var(--sans);
+    font-size:14px;
+    line-height:1.45;
+    -webkit-font-smoothing:antialiased;
+  }
+  a{color:var(--accent-2);text-decoration:none}
+  button{font-family:inherit}
+  textarea, input, select{
+    font-family:inherit;color:var(--ink);
+  }
+  header.app{
+    display:flex;align-items:center;gap:14px;
+    padding:14px 22px;border-bottom:1px solid var(--line);
+    background:rgba(11,13,18,.75);backdrop-filter: blur(8px);
+    position:sticky;top:0;z-index:30;
+  }
+  .logo{
+    width:34px;height:34px;border-radius:9px;
+    background: conic-gradient(from 220deg, var(--accent), var(--accent-2), var(--accent));
+    position:relative;display:grid;place-items:center;
+    box-shadow:0 6px 20px rgba(124,92,255,.4);
+  }
+  .logo::after{
+    content:"λ";color:#fff;font-weight:800;font-family:var(--mono);
+    font-size:18px;letter-spacing:-1px;
+  }
+  .brand{display:flex;flex-direction:column;line-height:1.1}
+  .brand b{font-size:15px;letter-spacing:.2px}
+  .brand small{color:var(--ink-mute);font-size:11px;letter-spacing:.8px;text-transform:uppercase}
+  .header-spacer{flex:1}
+  .header-actions{display:flex;align-items:center;gap:8px}
+  .mode-switch{
+    display:flex;border:1px solid var(--line);border-radius:999px;overflow:hidden;
+    background:var(--bg-1);
+  }
+  .mode-switch button{
+    background:transparent;border:0;color:var(--ink-dim);
+    padding:7px 14px;font-size:12px;cursor:pointer;
+  }
+  .mode-switch button.active{
+    background:linear-gradient(180deg, rgba(124,92,255,.18), rgba(124,92,255,.08));
+    color:var(--ink);
+  }
+  .iconbtn{
+    border:1px solid var(--line);background:var(--bg-1);color:var(--ink-dim);
+    border-radius:8px;padding:7px 10px;cursor:pointer;font-size:12px;
+  }
+  .iconbtn:hover{color:var(--ink);border-color:var(--line-2)}
+  main{
+    display:grid;grid-template-columns: 1fr 1fr 1fr;gap:1px;
+    background:var(--line);
+    min-height:calc(100vh - 64px);
+  }
+  .pane{
+    background:var(--bg);padding:18px 18px 110px;overflow:auto;
+    min-width:0;
+  }
+  .pane h2{
+    font-size:11px;letter-spacing:1.4px;text-transform:uppercase;
+    color:var(--ink-mute);margin:0 0 10px;font-weight:700;
+    display:flex;align-items:center;gap:8px;
+  }
+  .pane h2 .step{
+    display:inline-grid;place-items:center;width:18px;height:18px;border-radius:5px;
+    background:var(--bg-3);color:var(--ink-dim);font-size:10px;font-weight:700;
+  }
+  .pane h2 small{font-weight:500;letter-spacing:.5px;text-transform:none;color:var(--ink-mute)}
+  .pane-section{margin-bottom:22px}
+  .pane-section .label{
+    font-size:11px;letter-spacing:.6px;color:var(--ink-mute);
+    text-transform:uppercase;margin:0 0 6px;
+  }
+  .field{display:flex;flex-direction:column;gap:6px;margin-bottom:10px}
+  .field label{font-size:11px;color:var(--ink-mute);letter-spacing:.4px;text-transform:uppercase}
+  input[type=text], select, textarea{
+    width:100%;
+    background:var(--code);
+    border:1px solid var(--line);
+    border-radius:var(--radius-sm);
+    padding:10px 12px;color:var(--ink);
+    outline:none;transition:border-color .15s, box-shadow .15s;
+  }
+  input[type=text]:focus, select:focus, textarea:focus{
+    border-color:var(--accent);
+    box-shadow:0 0 0 3px rgba(124,92,255,.18);
+  }
+  textarea{min-height:120px;resize:vertical;font-family:var(--mono);font-size:12.5px;line-height:1.5}
+  .seg{
+    display:inline-flex;border:1px solid var(--line);border-radius:8px;overflow:hidden;background:var(--bg-1);
+  }
+  .seg button{
+    background:transparent;border:0;color:var(--ink-dim);
+    padding:7px 12px;font-size:12px;cursor:pointer;
+  }
+  .seg button.active{
+    background:var(--bg-3);color:var(--ink);
+  }
+  .row{display:flex;gap:8px;align-items:center}
+  .row > *{flex:1}
+  .row > .shrink{flex:0 0 auto}
+  .qcard{
+    background:linear-gradient(180deg, var(--bg-2), var(--bg-1));
+    border:1px solid var(--line);
+    border-radius:var(--radius);
+    padding:12px;margin-bottom:10px;
+    transition:border-color .15s;
+  }
+  .qcard:hover{border-color:var(--line-2)}
+  .qcard .qhead{
+    display:flex;align-items:center;gap:8px;margin-bottom:8px;
+  }
+  .qtype-badge{
+    font-family:var(--mono);font-size:10.5px;letter-spacing:.6px;
+    padding:3px 7px;border-radius:5px;border:1px solid var(--line-2);
+    text-transform:uppercase;
+  }
+  .badge-choice{color:#a78bfa;border-color:rgba(167,139,250,.35);background:rgba(167,139,250,.08)}
+  .badge-score{color:#26d4ff;border-color:rgba(38,212,255,.35);background:rgba(38,212,255,.08)}
+  .badge-noul{color:#3ddc97;border-color:rgba(61,220,151,.35);background:rgba(61,220,151,.08)}
+  .qkey{
+    flex:1;font-family:var(--mono);font-size:12px;
+    background:var(--code);border:1px solid var(--line);border-radius:6px;
+    padding:6px 8px;color:var(--ink);
+  }
+  .qkey:focus{outline:none;border-color:var(--accent)}
+  .icon-mini{
+    width:26px;height:26px;border-radius:6px;border:1px solid var(--line);
+    background:var(--bg-1);color:var(--ink-dim);cursor:pointer;display:grid;place-items:center;
+  }
+  .icon-mini:hover{color:var(--ink);border-color:var(--line-2)}
+  .add-q{
+    display:flex;gap:6px;flex-wrap:wrap;margin-top:6px;
+  }
+  .add-q button{
+    border:1px dashed var(--line-2);background:transparent;color:var(--ink-dim);
+    padding:8px 10px;border-radius:8px;cursor:pointer;font-size:12px;flex:1;min-width:90px;
+  }
+  .add-q button:hover{color:var(--ink);border-color:var(--accent);background:rgba(124,92,255,.06)}
+  .crit-row{
+    display:grid;grid-template-columns: 1fr 2fr auto;gap:6px;margin-bottom:6px;
+  }
+  .crit-row input[type=text]{padding:7px 9px;font-size:12px}
+  .actionbar{
+    position:fixed;left:50%;bottom:18px;transform:translateX(-50%);
+    display:flex;gap:10px;align-items:center;
+    background:rgba(17,20,28,.92);backdrop-filter: blur(10px);
+    border:1px solid var(--line);border-radius:999px;
+    padding:8px 8px 8px 16px;
+    box-shadow:var(--shadow);
+    z-index:50;
+  }
+  .actionbar .meta{font-size:12px;color:var(--ink-dim)}
+  .btn-primary{
+    background:linear-gradient(180deg, #8e72ff, #6a4dff);
+    color:white;border:0;padding:9px 18px;border-radius:999px;
+    cursor:pointer;font-weight:600;font-size:13px;letter-spacing:.2px;
+    box-shadow:0 8px 20px rgba(124,92,255,.35);
+  }
+  .btn-primary:hover{filter:brightness(1.07)}
+  .btn-primary:disabled{opacity:.5;cursor:not-allowed;box-shadow:none;filter:none}
+  .btn-ghost{
+    background:transparent;border:1px solid var(--line);color:var(--ink-dim);
+    padding:8px 14px;border-radius:999px;cursor:pointer;font-size:12px;
+  }
+  .btn-ghost:hover{color:var(--ink);border-color:var(--line-2)}
+  .empty{
+    border:1px dashed var(--line-2);border-radius:var(--radius);
+    padding:30px 18px;text-align:center;color:var(--ink-mute);
+  }
+  .empty h3{margin:0 0 6px;color:var(--ink-dim);font-weight:600;font-size:14px}
+  .empty p{margin:0;font-size:12.5px;line-height:1.55}
+  .answer-card{
+    background:linear-gradient(180deg, var(--bg-2), var(--bg-1));
+    border:1px solid var(--line);border-radius:var(--radius);
+    padding:14px;margin-bottom:12px;
+  }
+  .answer-card .ahead{
+    display:flex;align-items:center;gap:8px;margin-bottom:10px;
+  }
+  .answer-card .akey{font-family:var(--mono);font-size:12px;color:var(--ink)}
+  .answer-card .aval{
+    margin-left:auto;font-weight:600;font-size:13px;
+    color:var(--ink);
+    padding:4px 10px;border-radius:6px;background:var(--bg-3);
+    border:1px solid var(--line-2);
+  }
+  .prob-row{margin:7px 0}
+  .prob-label{display:flex;justify-content:space-between;font-size:12px;color:var(--ink-dim);margin-bottom:3px}
+  .prob-bar{
+    position:relative;height:8px;border-radius:4px;background:var(--bg-3);overflow:hidden;
+  }
+  .prob-fill{
+    position:absolute;left:0;top:0;bottom:0;
+    background:linear-gradient(90deg, var(--accent), var(--accent-2));
+    border-radius:4px;transition:width .4s ease;
+  }
+  .prob-fill.win{background:linear-gradient(90deg, #3ddc97, #26d4ff)}
+  .confline{
+    display:flex;align-items:center;gap:8px;font-size:12px;color:var(--ink-dim);
+    margin-top:10px;
+  }
+  .dot{width:8px;height:8px;border-radius:50%;background:var(--ink-mute)}
+  .dot.good{background:var(--good)}
+  .dot.warn{background:var(--warn)}
+  .dot.bad{background:var(--bad)}
+  .raw{
+    margin-top:14px;
+    background:var(--code);border:1px solid var(--line);border-radius:var(--radius-sm);
+    padding:10px;font-family:var(--mono);font-size:11.5px;color:var(--ink-dim);
+    white-space:pre-wrap;max-height:240px;overflow:auto;
+  }
+  .pill{
+    display:inline-block;font-size:10.5px;letter-spacing:.6px;
+    text-transform:uppercase;padding:3px 7px;border-radius:5px;
+    background:var(--bg-3);color:var(--ink-dim);border:1px solid var(--line);
+  }
+  .pill.ok{color:var(--good);border-color:rgba(61,220,151,.35);background:rgba(61,220,151,.08)}
+  .pill.err{color:var(--bad);border-color:rgba(255,107,107,.35);background:rgba(255,107,107,.08)}
+  .hint{font-size:11.5px;color:var(--ink-mute);line-height:1.55}
+  details{
+    border:1px solid var(--line);border-radius:var(--radius-sm);
+    background:var(--bg-1);padding:8px 10px;margin-top:10px;
+  }
+  details summary{cursor:pointer;color:var(--ink-dim);font-size:12px;list-style:none}
+  details[open] summary{margin-bottom:8px}
+  .toast{
+    position:fixed;right:18px;bottom:90px;
+    background:var(--bg-3);border:1px solid var(--line-2);
+    padding:10px 14px;border-radius:10px;color:var(--ink);
+    font-size:12.5px;box-shadow:var(--shadow);z-index:60;
+    transform:translateY(20px);opacity:0;transition:.25s ease;
+    max-width:360px;
+  }
+  .toast.show{transform:translateY(0);opacity:1}
+  .toast.err{border-color:rgba(255,107,107,.4)}
+  .toast.ok{border-color:rgba(61,220,151,.4)}
+  .scroll{overflow:auto;max-height:420px}
+  ::-webkit-scrollbar{width:9px;height:9px}
+  ::-webkit-scrollbar-track{background:transparent}
+  ::-webkit-scrollbar-thumb{background:#222a3b;border-radius:6px}
+  ::-webkit-scrollbar-thumb:hover{background:#2c3447}
+  @media (max-width: 1100px){
+    main{grid-template-columns:1fr}
+  }
+</style>
+</head>
+<body>
+
+<header class="app">
+  <div class="logo" title="JEV"></div>
+  <div class="brand">
+    <b>JEV Playground</b>
+    <small>Decision Layer · System 1</small>
+  </div>
+  <div class="header-spacer"></div>
+  <div class="header-actions">
+    <div class="mode-switch" id="modeSwitch" title="Run mode">
+      <button data-mode="demo" class="active">Demo (mock)</button>
+      <button data-mode="live">Live API</button>
+    </div>
+    <button class="iconbtn" id="downloadBtn" title="Download this HTML file">⤓ Download .html</button>
+    <button class="iconbtn" id="exportBtn" title="Export config as JSON">{} Export JSON</button>
+    <button class="iconbtn" id="importBtn" title="Import JSON config">⤒ Import</button>
+    <button class="iconbtn" id="resetBtn" title="Reset all">↺ Reset</button>
+  </div>
+</header>
+
+<main>
+  <section class="pane">
+    <h2><span class="step">1</span> State <small>· context every question reads</small></h2>
+    <div class="pane-section">
+      <div class="label">State type</div>
+      <div class="seg" id="stateTypeSeg">
+        <button data-type="text" class="active">Text</button>
+        <button data-type="object">JSON object</button>
+        <button data-type="array">Array of text</button>
+      </div>
+    </div>
+    <div class="pane-section" id="stateInputWrap">
+      <div class="label" id="stateLabel">Message / document</div>
+      <textarea id="stateText" spellcheck="false">My payout has failed three times and I need help before payroll runs tomorrow.</textarea>
+      <div class="hint" id="stateHint">Plain string. Best for a message, ticket body, email, or short document.</div>
+    </div>
+    <div class="pane-section">
+      <details>
+        <summary>Preset examples</summary>
+        <div class="row" style="margin-top:8px;flex-wrap:wrap;gap:6px">
+          <button class="btn-ghost" data-preset="support">Support ticket</button>
+          <button class="btn-ghost" data-preset="agent">Agent tool call</button>
+          <button class="btn-ghost" data-preset="moderation">Content moderation</button>
+          <button class="btn-ghost" data-preset="routing">Email routing</button>
+        </div>
+      </details>
+    </div>
+    <div class="pane-section">
+      <details id="apiKeyDetails">
+        <summary>API key &amp; endpoint (used in Live mode)</summary>
+        <div class="field" style="margin-top:10px">
+          <label>Endpoint</label>
+          <input type="text" id="apiEndpoint" value="https://thejevai.com/v1/systemone" />
+        </div>
+        <div class="field">
+          <label>Bearer key</label>
+          <input type="text" id="apiKey" placeholder="JEV_API_KEY (kept in memory only)" autocomplete="off" />
+          <div class="hint">Stored only in this browser session. Never sent anywhere except the endpoint above.</div>
+        </div>
+        <div class="field">
+          <label>Model</label>
+          <input type="text" id="apiModel" value="jev-latest" />
+        </div>
+      </details>
+    </div>
+  </section>
+
+  <section class="pane">
+    <h2><span class="step">2</span> Questions <small>· typed decisions</small></h2>
+    <div class="pane-section">
+      <div class="add-q">
+        <button data-add="choice">+ Choice</button>
+        <button data-add="score">+ Score</button>
+        <button data-add="noul">+ Noul</button>
+      </div>
+    </div>
+    <div id="qList" class="pane-section"></div>
+    <div class="pane-section">
+      <details>
+        <summary>Question type reference</summary>
+        <div class="hint" style="margin-top:8px">
+          <b style="color:var(--ink-dim)">Choice</b> — one option from a predefined set. Best for classification &amp; routing.<br>
+          <b style="color:var(--ink-dim)">Score</b> — position on an ordered rubric (low → high). Severity, quality, intensity.<br>
+          <b style="color:var(--ink-dim)">Noul</b> — 0–1 probability that a specific proposition is true. Yes/no judgment.
+        </div>
+      </details>
+    </div>
+  </section>
+
+  <section class="pane">
+    <h2><span class="step">3</span> Result <small>· structured decisions</small></h2>
+    <div id="results">
+      <div class="empty">
+        <h3>No decision yet</h3>
+        <p>Configure a state and at least one question, then press <b>Run decision</b>. Demo mode simulates a realistic response; Live mode calls <code style="font-family:var(--mono);color:var(--ink)">/v1/systemone</code> with your key.</p>
+      </div>
+    </div>
+  </section>
+</main>
+
+<div class="actionbar">
+  <span class="meta" id="metaInfo">0 questions · demo mode</span>
+  <button class="btn-ghost" id="validateBtn">Validate JSON</button>
+  <button class="btn-primary" id="runBtn">▶ Run decision</button>
+</div>
+
+<div class="toast" id="toast"></div>
+<input type="file" id="fileImport" accept="application/json" style="display:none" />
+
+<script>
+const $  = (s, r=document) => r.querySelector(s);
+const $$ = (s, r=document) => Array.from(r.querySelectorAll(s));
+
+const state = {
+  stateType: "text",
+  stateText: "My payout has failed three times and I need help before payroll runs tomorrow.",
+  questions: [],
+  mode: "demo",
+  api: { endpoint: "https://thejevai.com/v1/systemone", key: "", model: "jev-latest" }
+};
+
+let _qid = 1;
+const newQ = (type) => {
+  const base = { id: _qid++, type, key: defaultKey(type), instructions: "" };
+  if (type === "choice") base.criteria = [
+    { key: "billing", description: "Payments, invoices, refunds, or payouts" },
+    { key: "technical", description: "Bugs, outages, or integration failures" }
+  ];
+  if (type === "score") base.levels = ["low", "medium", "high"];
+  return base;
+};
+const defaultKey = (type) => {
+  const n = state.questions.length + 1;
+  if (type === "choice") return `department`;
+  if (type === "score")  return `severity`;
+  return `needs_human`;
+};
+
+const PRESETS = {
+  support: {
+    stateType: "object",
+    stateText: JSON.stringify({
+      message: "My payout has failed three times and I need help before payroll runs tomorrow.",
+      account_age_days: 420,
+      recent_failures: 3,
+      requested_action: "retry payout"
+    }, null, 2),
+    questions: [
+      { id:_qid++, type:"choice", key:"department",
+        instructions:"Which team should handle this request?",
+        criteria:[
+          { key:"billing", description:"Payments, invoices, refunds, or payouts" },
+          { key:"technical", description:"Bugs, outages, or integration failures" },
+          { key:"sales", description:"Pricing, upgrades, or new accounts" }
+        ]
+      },
+      { id:_qid++, type:"score", key:"severity",
+        instructions:"How severe is this issue?",
+        levels:["low","medium","high","critical"]
+      },
+      { id:_qid++, type:"noul", key:"needs_human",
+        instructions:"Does this request require human review before any automated retry?"
+      }
+    ]
+  },
+  agent: {
+    stateType: "object",
+    stateText: JSON.stringify({
+      tool: "send_email",
+      args: { to: "ceo@acme.com", subject: "Confidential Q4 numbers", body: "..." },
+      actor_role: "intern_bot",
+      history_success_rate: 0.41
+    }, null, 2),
+    questions: [
+      { id:_qid++, type:"noul", key:"requires_approval",
+        instructions:"Should this tool call require explicit human approval before execution?"
+      },
+      { id:_qid++, type:"score", key:"risk",
+        instructions:"How risky is this action if executed?",
+        levels:["safe","low","medium","high","critical"]
+      },
+      { id:_qid++, type:"choice", key:"route_to",
+        instructions:"Which reviewer is the best match?",
+        criteria:[
+          { key:"legal", description:"Legal & compliance" },
+          { key:"security", description:"Security team" },
+          { key:"manager", description:"Direct manager" },
+          { key:"auto", description:"No human needed" }
+        ]
+      }
+    ]
+  },
+  moderation: {
+    stateType: "array",
+    stateText: JSON.stringify([
+      "User post: this is a thoughtful critique of policy X.",
+      "Contains the words 'idiot' and 'moron' but no slurs.",
+      "No calls to violence."
+    ], null, 2),
+    questions: [
+      { id:_qid++, type:"choice", key:"verdict",
+        instructions:"What moderation action fits?",
+        criteria:[
+          { key:"approve", description:"Safe to publish as-is" },
+          { key:"soft", description:"Publish with a content warning" },
+          { key:"hide", description:"Hide from public feeds" },
+          { key:"remove", description:"Remove and warn the author" }
+        ]
+      },
+      { id:_qid++, type:"noul", key:"is_toxic",
+        instructions:"Is the post toxic or hateful?"
+      },
+      { id:_qid++, type:"score", key:"severity",
+        instructions:"Rate severity from low to high.",
+        levels:["low","medium","high"]
+      }
+    ]
+  },
+  routing: {
+    stateType: "text",
+    stateText: "Hi team, can you confirm whether invoice #4421 was processed last Friday? It's urgent.",
+    questions: [
+      { id:_qid++, type:"choice", key:"category",
+        instructions:"What kind of email is this?",
+        criteria:[
+          { key:"billing", description:"Billing, invoices, payments" },
+          { key:"support", description:"General support" },
+          { key:"sales", description:"Sales inquiry" },
+          { key:"spam", description:"Likely spam" }
+        ]
+      },
+      { id:_qid++, type:"noul", key:"urgent",
+        instructions:"Does this require same-day attention?"
+      }
+    ]
+  }
+};
+
+function render(){
+  $$('#stateTypeSeg button').forEach(b => b.classList.toggle('active', b.dataset.type === state.stateType));
+  $('#stateLabel').textContent = ({
+    text: 'Message / document',
+    object: 'JSON object',
+    array: 'Array of text items (JSON)'
+  })[state.stateType];
+  $('#stateHint').textContent = ({
+    text: 'Plain string. Best for a message, ticket body, email, or short document.',
+    object: 'Named fields keep important context explicit. Must be valid JSON.',
+    array: 'Multiple short text items the decision should consider together. Must be valid JSON array of strings.'
+  })[state.stateType];
+  $('#stateText').value = state.stateText;
+  $('#stateText').placeholder = ({
+    text: 'Paste a message, ticket body, email, or short document…',
+    object: '{\n  "message": "...",\n  "account_age_days": 420\n}',
+    array: '[\n  "first message…",\n  "second message…"\n]'
+  })[state.stateType];
+
+  const list = $('#qList');
+  list.innerHTML = '';
+  if (state.questions.length === 0){
+    const e = document.createElement('div');
+    e.className = 'empty';
+    e.innerHTML = `<h3>No questions yet</h3><p>Add a <b>Choice</b> for routing, a <b>Score</b> for severity, or a <b>Noul</b> for a yes/no judgment.</p>`;
+    list.appendChild(e);
+  }
+  state.questions.forEach((q, idx) => list.appendChild(renderQuestion(q, idx)));
+
+  $$('#modeSwitch button').forEach(b => b.classList.toggle('active', b.dataset.mode === state.mode));
+  $('#metaInfo').textContent = `${state.questions.length} question${state.questions.length===1?'':'s'} · ${state.mode} mode`;
+}
+
+function renderQuestion(q, idx){
+  const card = document.createElement('div');
+  card.className = 'qcard';
+  card.dataset.id = q.id;
+
+  const badgeClass = q.type==='choice'?'badge-choice':q.type==='score'?'badge-score':'badge-noul';
+
+  card.innerHTML = `
+    <div class="qhead">
+      <span class="qtype-badge ${badgeClass}">${q.type}</span>
+      <input class="qkey" type="text" value="${escapeAttr(q.key)}" placeholder="question_key" />
+      <button class="icon-mini" data-act="up"   title="Move up">↑</button>
+      <button class="icon-mini" data-act="down" title="Move down">↓</button>
+      <button class="icon-mini" data-act="del"  title="Delete">✕</button>
+    </div>
+    <div class="field" style="margin-bottom:8px">
+      <label>Instructions</label>
+      <input type="text" class="qinst" value="${escapeAttr(q.instructions)}" placeholder="What should this question decide?" />
+    </div>
+    <div class="qbody"></div>
+  `;
+
+  const body = $('.qbody', card);
+  if (q.type === 'choice'){
+    const wrap = document.createElement('div');
+    wrap.innerHTML = `
+      <div class="label" style="margin-top:4px">Criteria (option → description)</div>
+      <div class="crit-list"></div>
+      <button class="btn-ghost" data-addcrit style="margin-top:6px">+ Add option</button>
+    `;
+    body.appendChild(wrap);
+    const list = $('.crit-list', wrap);
+    q.criteria.forEach((c, i) => {
+      const row = document.createElement('div');
+      row.className = 'crit-row';
+      row.innerHTML = `
+        <input type="text" placeholder="option_key" value="${escapeAttr(c.key)}" />
+        <input type="text" placeholder="What this option means" value="${escapeAttr(c.description)}" />
+        <button class="icon-mini" title="Remove">✕</button>
+      `;
+      $('input:nth-child(1)', row).addEventListener('input', e => q.criteria[i].key = e.target.value);
+      $('input:nth-child(2)', row).addEventListener('input', e => q.criteria[i].description = e.target.value);
+      $('button', row).addEventListener('click', () => { q.criteria.splice(i,1); render(); });
+      list.appendChild(row);
+    });
+    $('button[data-addcrit]', wrap).addEventListener('click', () => {
+      q.criteria.push({ key: `option_${q.criteria.length+1}`, description: "" });
+      render();
+    });
+  } else if (q.type === 'score'){
+    const wrap = document.createElement('div');
+    wrap.innerHTML = `
+      <div class="label" style="margin-top:4px">Levels (low → high, comma separated)</div>
+      <input type="text" class="qlevels" value="${escapeAttr(q.levels.join(', '))}" />
+      <div class="hint">Returned score is probability-weighted across these levels.</div>
+    `;
+    body.appendChild(wrap);
+    $('.qlevels', wrap).addEventListener('input', e => {
+      q.levels = e.target.value.split(',').map(s=>s.trim()).filter(Boolean);
+    });
+  } else {
+    const wrap = document.createElement('div');
+    wrap.innerHTML = `<div class="hint">Returns a probability from 0 to 1 that the proposition in <i>Instructions</i> is true.</div>`;
+    body.appendChild(wrap);
+  }
+
+  $('.qkey', card).addEventListener('input', e => q.key = e.target.value.replace(/[^a-zA-Z0-9_]/g,'_'));
+  $('.qinst', card).addEventListener('input', e => q.instructions = e.target.value);
+
+  $$('.qhead .icon-mini', card).forEach(btn => {
+    btn.addEventListener('click', () => {
+      const i = state.questions.findIndex(x => x.id === q.id);
+      if (btn.dataset.act === 'del') { state.questions.splice(i,1); render(); }
+      else if (btn.dataset.act === 'up' && i>0) { [state.questions[i-1], state.questions[i]] = [state.questions[i], state.questions[i-1]]; render(); }
+      else if (btn.dataset.act === 'down' && i<state.questions.length-1) { [state.questions[i+1], state.questions[i]] = [state.questions[i], state.questions[i+1]]; render(); }
+    });
+  });
+
+  return card;
+}
+
+function buildRequest(){
+  let parsedState;
+  if (state.stateType === 'text'){
+    parsedState = state.stateText;
+  } else {
+    try { parsedState = JSON.parse(state.stateText); }
+    catch(e){ throw new Error(`State is not valid JSON: ${e.message}`); }
+  }
+
+  if (state.questions.length === 0) throw new Error("Add at least one question.");
+  const questions = {};
+  const keys = new Set();
+  for (const q of state.questions){
+    if (!q.key) throw new Error("Every question needs a key.");
+    if (keys.has(q.key)) throw new Error(`Duplicate question key: "${q.key}"`);
+    keys.add(q.key);
+    const item = { type: q.type, instructions: q.instructions || "" };
+    if (q.type === 'choice'){
+      if (!q.criteria || q.criteria.length < 2) throw new Error(`Choice "${q.key}" needs at least 2 options.`);
+      const criteria = {};
+      q.criteria.forEach(c => { if(c.key) criteria[c.key] = c.description || ""; });
+      if (Object.keys(criteria).length < 2) throw new Error(`Choice "${q.key}" needs at least 2 valid options.`);
+      item.criteria = criteria;
+    } else if (q.type === 'score'){
+      if (!q.levels || q.levels.length < 2) throw new Error(`Score "${q.key}" needs at least 2 levels (low → high).`);
+      item.levels = q.levels;
+    }
+    questions[q.key] = item;
+  }
+
+  return {
+    model: state.api.model || "jev-latest",
+    state: parsedState,
+    questions
+  };
+}
+
+function mockInfer(req){
+  const seed = simpleHash(JSON.stringify(req));
+  const rnd  = mulberry32(seed);
+  const answers = {};
+  for (const [key, q] of Object.entries(req.questions)){
+    if (q.type === 'choice'){
+      const opts = Object.keys(q.criteria);
+      const probs = opts.map(() => rnd());
+      const sum = probs.reduce((a,b)=>a+b,0) || 1;
+      const norm = probs.map(p => +(p/sum).toFixed(3));
+      const winIdx = norm.indexOf(Math.max(...norm));
+      norm[winIdx] = Math.min(0.98, +(norm[winIdx] + 0.1).toFixed(3));
+      const renorm = +(1 / norm[winIdx]).toFixed(3);
+      const final = norm.map((p,i) => i===winIdx ? p : +(p*renorm*0.9).toFixed(3));
+      const total = final.reduce((a,b)=>a+b,0);
+      const probsOut = {};
+      opts.forEach((o,i) => probsOut[o] = +(final[i]/total).toFixed(3));
+      const s = Object.values(probsOut).reduce((a,b)=>a+b,0);
+      Object.keys(probsOut).forEach(k => probsOut[k] = +(probsOut[k]/s).toFixed(3));
+      const confidence = +(0.6 + rnd()*0.35).toFixed(3);
+      answers[key] = { type:"choice", choice: opts[winIdx], probabilities: probsOut, confidence };
+    } else if (q.type === 'score'){
+      const lvls = q.levels;
+      const probs = lvls.map(() => rnd());
+      const sum = probs.reduce((a,b)=>a+b,0) || 1;
+      const norm = probs.map(p => +(p/sum).toFixed(3));
+      const probsOut = {}; lvls.forEach((l,i)=>probsOut[l]=norm[i]);
+      const score = +(lvls.indexOf(lvls[norm.indexOf(Math.max(...norm))]) / Math.max(1, lvls.length-1)).toFixed(3);
+      answers[key] = { type:"score", score, probabilities: probsOut, confidence: +(0.55 + rnd()*0.4).toFixed(3) };
+    } else {
+      const noul = +(0.15 + rnd()*0.8).toFixed(3);
+      answers[key] = { type:"noul", noul };
+    }
+  }
+  return {
+    model: "jev-1.13.0-demo",
+    answers,
+    usage: { input_tokens: 120 + Math.floor(rnd()*200), output_tokens: 18 + Math.floor(rnd()*40) }
+  };
+}
+
+function renderResults(resp, error){
+  const root = $('#results');
+  root.innerHTML = '';
+  if (error){
+    root.innerHTML = `<div class="empty"><h3 style="color:var(--bad)">Error</h3><p>${escapeHtml(error)}</p></div>`;
+    return;
+  }
+  if (!resp || !resp.answers){
+    root.innerHTML = `<div class="empty"><h3>No answers returned</h3><p>The API responded but no <code>answers</code> field was found.</p></div>`;
+    return;
+  }
+
+  const header = document.createElement('div');
+  header.className = 'row';
+  header.style.marginBottom = '12px';
+  header.innerHTML = `
+    <span class="pill ok">model: ${escapeHtml(resp.model || 'unknown')}</span>
+    <span class="pill">in: ${resp.usage?.input_tokens ?? '—'} tok</span>
+    <span class="pill">out: ${resp.usage?.output_tokens ?? '—'} tok</span>
+    <span class="shrink pill ok" id="latencyPill">—</span>
+  `;
+  root.appendChild(header);
+
+  for (const [key, a] of Object.entries(resp.answers)){
+    const card = document.createElement('div');
+    card.className = 'answer-card';
+    const badgeClass = a.type==='choice'?'badge-choice':a.type==='score'?'badge-score':'badge-noul';
+    let headVal = '';
+    if (a.type === 'choice') headVal = a.choice;
+    else if (a.type === 'score') headVal = String(a.score);
+    else headVal = String(a.noul);
+
+    let body = '';
+    if (a.type === 'choice'){
+      const sorted = Object.entries(a.probabilities).sort((x,y)=>y[1]-x[1]);
+      body += sorted.map(([k,v]) => `
+        <div class="prob-row">
+          <div class="prob-label"><span>${escapeHtml(k)}</span><span>${(v*100).toFixed(1)}%</span></div>
+          <div class="prob-bar"><div class="prob-fill ${k===a.choice?'win':''}" style="width:${(v*100).toFixed(1)}%"></div></div>
+        </div>`).join('');
+      const c = confBucket(a.confidence);
+      body += `<div class="confline"><span class="dot ${c.cls}"></span>confidence ${(a.confidence*100).toFixed(1)}% <span style="color:var(--ink-mute)">· ${c.label}</span></div>`;
+    } else if (a.type === 'score'){
+      const sorted = Object.entries(a.probabilities).sort((x,y)=>y[1]-x[1]);
+      body += sorted.map(([k,v]) => `
+        <div class="prob-row">
+          <div class="prob-label"><span>${escapeHtml(k)}</span><span>${(v*100).toFixed(1)}%</span></div>
+          <div class="prob-bar"><div class="prob-fill ${k===sorted[0][0]?'win':''}" style="width:${(v*100).toFixed(1)}%"></div></div>
+        </div>`).join('');
+      body += `<div class="confline"><span class="dot"></span>weighted score ${a.score}</div>`;
+    } else {
+      const pct = a.noul*100;
+      const c = pct >= 70 ? {cls:'good',label:'likely yes'} : pct <= 30 ? {cls:'bad',label:'likely no'} : {cls:'warn',label:'uncertain'};
+      body += `
+        <div class="prob-row">
+          <div class="prob-label"><span>probability (yes)</span><span>${pct.toFixed(1)}%</span></div>
+          <div class="prob-bar"><div class="prob-fill ${pct>=50?'win':''}" style="width:${pct.toFixed(1)}%"></div></div>
+        </div>
+        <div class="confline"><span class="dot ${c.cls}"></span>${c.label}</div>
+      `;
+    }
+
+    card.innerHTML = `
+      <div class="ahead">
+        <span class="qtype-badge ${badgeClass}">${a.type}</span>
+        <span class="akey">${escapeHtml(key)}</span>
+        <span class="aval">${escapeHtml(headVal)}</span>
+      </div>
+      ${body}
+    `;
+    root.appendChild(card);
+  }
+
+  const rawWrap = document.createElement('details');
+  rawWrap.style.marginTop = '10px';
+  rawWrap.innerHTML = `<summary style="cursor:pointer;color:var(--ink-dim);font-size:12px">View raw response</summary>`;
+  const pre = document.createElement('pre');
+  pre.className = 'raw';
+  pre.textContent = JSON.stringify(resp, null, 2);
+  rawWrap.appendChild(pre);
+  root.appendChild(rawWrap);
+}
+
+function confBucket(c){
+  if (c >= 0.8) return { cls:'good', label:'high confidence' };
+  if (c >= 0.5) return { cls:'warn', label:'medium confidence' };
+  return { cls:'bad', label:'low confidence' };
+}
+
+async function runDecision(){
+  let req;
+  try { req = buildRequest(); }
+  catch(e){ toast(e.message, 'err'); renderResults(null, e.message); return; }
+
+  const btn = $('#runBtn'); btn.disabled = true; btn.textContent = '⏳ Running…';
+  const t0 = performance.now();
+  try {
+    let resp;
+    if (state.mode === 'demo'){
+      await sleep(450 + Math.random()*350);
+      resp = mockInfer(req);
+    } else {
+      if (!state.api.key){ throw new Error("Live mode needs an API key. Open 'API key & endpoint' below and paste it."); }
+      const r = await fetch(state.api.endpoint, {
+        method: 'POST',
+        headers: { 'Authorization': 'Bearer ' + state.api.key, 'Content-Type': 'application/json' },
+        body: JSON.stringify(req)
+      });
+      const txt = await r.text();
+      if (!r.ok) throw new Error('HTTP ' + r.status + ': ' + txt);
+      try { resp = JSON.parse(txt); }
+      catch (e2) { throw new Error("Response was not valid JSON: " + txt.slice(0,200)); }
+    }
+    const dt = Math.round(performance.now() - t0);
+    renderResults(resp);
+    const lp = $('#latencyPill'); if (lp) lp.textContent = dt + ' ms';
+    toast('Decision complete in ' + dt + ' ms', 'ok');
+  } catch(e){
+    renderResults(null, e.message);
+    toast(e.message, 'err');
+  } finally {
+    btn.disabled = false; btn.textContent = '▶ Run decision';
+  }
+}
+
+function escapeHtml(s){ return String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+function escapeAttr(s){ return escapeHtml(s); }
+function sleep(ms){ return new Promise(r=>setTimeout(r,ms)); }
+function simpleHash(str){ let h=2166136261>>>0; for (let i=0;i<str.length;i++){ h ^= str.charCodeAt(i); h = Math.imul(h,16777619); } return h>>>0; }
+function mulberry32(a){ return function(){ a |= 0; a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
+function toast(msg, kind){
+  const t = $('#toast');
+  t.textContent = msg;
+  t.className = 'toast show ' + (kind||'');
+  clearTimeout(toast._t);
+  toast._t = setTimeout(()=> t.classList.remove('show'), 3000);
+}
+
+window.addEventListener('DOMContentLoaded', () => {
+  $$('#stateTypeSeg button').forEach(b => b.addEventListener('click', () => {
+    state.stateType = b.dataset.type;
+    render();
+  }));
+  $('#stateText').addEventListener('input', e => state.stateText = e.target.value);
+  $$('#modeSwitch button').forEach(b => b.addEventListener('click', () => {
+    state.mode = b.dataset.mode;
+    render();
+    if (state.mode === 'live') $('#apiKeyDetails').setAttribute('open','');
+  }));
+  $('#apiEndpoint').addEventListener('input', e => state.api.endpoint = e.target.value);
+  $('#apiKey').addEventListener('input', e => state.api.key = e.target.value);
+  $('#apiModel').addEventListener('input', e => state.api.model = e.target.value);
+
+  $$('.add-q button').forEach(b => b.addEventListener('click', () => {
+    state.questions.push(newQ(b.dataset.add));
+    render();
+  }));
+
+  $('#runBtn').addEventListener('click', runDecision);
+
+  $('#validateBtn').addEventListener('click', () => {
+    if (state.stateType === 'text'){ toast('Text state — nothing to validate.', 'ok'); return; }
+    try { JSON.parse(state.stateText); toast('JSON is valid.', 'ok'); }
+    catch(e){ toast('Invalid JSON: ' + e.message, 'err'); }
+  });
+
+  $('#exportBtn').addEventListener('click', () => {
+    try {
+      const req = buildRequest();
+      const blob = new Blob([JSON.stringify(req, null, 2)], { type: 'application/json' });
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = 'jev-request.json';
+      a.click();
+      URL.revokeObjectURL(a.href);
+      toast('Exported jev-request.json', 'ok');
+    } catch(e){ toast(e.message, 'err'); }
+  });
+
+  $('#downloadBtn').addEventListener('click', () => {
+    const html = '<!doctype html>\n' + document.documentElement.outerHTML;
+    const blob = new Blob([html], { type: 'text/html' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'jev-playground.html';
+    a.click();
+    URL.revokeObjectURL(a.href);
+    toast('Downloaded jev-playground.html', 'ok');
+  });
+
+  $('#importBtn').addEventListener('click', () => $('#fileImport').click());
+  $('#fileImport').addEventListener('change', async (e) => {
+    const f = e.target.files[0]; if (!f) return;
+    try {
+      const txt = await f.text();
+      const data = JSON.parse(txt);
+      ingestConfig(data);
+      render();
+      toast('Config imported.', 'ok');
+    } catch(err){ toast('Import failed: ' + err.message, 'err'); }
+    e.target.value = '';
+  });
+
+  $('#resetBtn').addEventListener('click', () => {
+    if (!confirm('Reset state and questions?')) return;
+    state.stateType = 'text';
+    state.stateText = '';
+    state.questions = [];
+    render();
+    $('#results').innerHTML = '<div class="empty"><h3>Reset</h3><p>Add a state and a few questions, then run a decision.</p></div>';
+    toast('Cleared.', 'ok');
+  });
+
+  $$('button[data-preset]').forEach(b => b.addEventListener('click', () => {
+    const p = PRESETS[b.dataset.preset];
+    if (!p) return;
+    state.stateType = p.stateType;
+    state.stateText = p.stateText;
+    state.questions = p.questions;
+    _qid = Math.max(_qid, ...p.questions.map(q=>q.id+1));
+    render();
+    toast('Loaded preset: ' + b.dataset.preset, 'ok');
+  }));
+
+  state.questions.push(newQ('choice'));
+  state.questions.push(newQ('noul'));
+  render();
+});
+
+function ingestConfig(data){
+  if (data && data.state !== undefined){
+    if (typeof data.state === 'string'){ state.stateType = 'text'; state.stateText = data.state; }
+    else if (Array.isArray(data.state)){ state.stateType = 'array'; state.stateText = JSON.stringify(data.state, null, 2); }
+    else { state.stateType = 'object'; state.stateText = JSON.stringify(data.state, null, 2); }
+  }
+  if (data && data.questions && typeof data.questions === 'object'){
+    state.questions = [];
+    for (const [k, q] of Object.entries(data.questions)){
+      const item = { id: _qid++, type: q.type || 'noul', key: k, instructions: q.instructions || "" };
+      if (q.type === 'choice'){
+        item.criteria = q.criteria
+          ? Object.entries(q.criteria).map(([ck, cv]) => ({ key: ck, description: typeof cv === 'string' ? cv : (cv?.description || "") }))
+          : [];
+      } else if (q.type === 'score'){
+        item.levels = Array.isArray(q.levels) ? q.levels : ["low","medium","high"];
+      }
+      state.questions.push(item);
+    }
+  }
+}
+</script>
+</body>
+</html>
